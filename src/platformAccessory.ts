@@ -26,7 +26,7 @@ export class PresenceSensorAccessory {
     this.motionService
       .getCharacteristic(this.platform.Characteristic.MotionDetected)
       .updateValue(state);
-    this.platform.log.info(
+    this.platform.log.debug(
       `MotionDetected updated for ${this.accessory.displayName}: ${state}`,
     );
   }

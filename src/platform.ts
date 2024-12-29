@@ -33,7 +33,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       this.server.post('/motion', (req, res) => {
         const { deviceId, motionDetected } = req.body;
 
-        this.log.info(`Received motion event from ${deviceId}:`, motionDetected);
+        this.log.debug(`Received motion event from ${deviceId}:`, motionDetected);
 
         this.handleMotionEvent(deviceId, motionDetected);
 
