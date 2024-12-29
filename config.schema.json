@@ -6,11 +6,11 @@
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Sensor 1"
+      "port": {
+        "title": "HTTP Server Port",
+        "type": "number",
+        "default": 9988,
+        "description": "The port number for the HTTP server. Must be between 1 and 65535."
       }
     }
   }
