@@ -5,7 +5,10 @@
   "version": "1.0.0",
   "private": false,
   "description": "This is a simple presence sensor plugin to use with LD2410",
-  "author": "Hikmet Can Çelik",
+  "author": {
+    "name": "Hikmet Can Celik",
+    "email": "celik@me.com"
+  },
   "license": "Apache-2.0",
   "homepage": "https://github.com/hcancelik/homebridge-presence-sensor#readme",
   "repository": {
