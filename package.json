@@ -3,7 +3,7 @@
   "displayName": "Presence Sensor",
   "type": "module",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
   "description": "This is a simple presence sensor plugin to use with LD2410",
   "author": "Hikmet Can Çelik",
   "license": "Apache-2.0",
