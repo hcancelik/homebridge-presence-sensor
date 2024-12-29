@@ -1,22 +1,24 @@
 {
   "name": "homebridge-plugin-name",
-  "displayName": "Plugin Name",
+  "displayName": "Presence Sensor",
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "A short description about what your plugin does.",
-  "author": "Your Name",
+  "description": "This is a simple presence sensor plugin to use with LD2410",
+  "author": "Hikmet Can Çelik",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/USERNAME/GITHUB_PROJECT_NAME#readme",
+  "homepage": "https://github.com/hcancelik/homebridge-presence-sensor#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "https://github.com/hcancelik/homebridge-presence-sensor.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/hcancelik/homebridge-presence-sensor/issues"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "homebridge presense sensor",
+    "ld2410"
   ],
   "main": "dist/index.js",
   "engines": {
