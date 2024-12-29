@@ -31,11 +31,11 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       this.discoverDevices();
 
       this.server.post('/motion', (req, res) => {
-        const { deviceId, motionDetected } = req.body;
+        const { deviceId, data } = req.body;
 
-        this.log.debug(`Received motion event from ${deviceId}:`, motionDetected);
+        this.log.debug(`Received motion event from ${deviceId}:`, data);
 
-        this.handleMotionEvent(deviceId, motionDetected);
+        this.handleMotionEvent(deviceId, data);
 
         res.sendStatus(200);
       });
@@ -78,7 +78,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
     }
   }
 
-  handleMotionEvent(deviceId: string, motionDetected: boolean) {
+  handleMotionEvent(deviceId: string, data: Record<string, number>) {
     const uuid = this.api.hap.uuid.generate(deviceId);
     const accessory = this.accessories.get(uuid);
 
@@ -87,6 +87,19 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       return;
     }
 
-    accessory.updateMotionDetected(motionDetected);
+    const maxStationaryDistance = this.config.maxStationaryDistance || 150;
+    const minStationarySignal = this.config.minStationarySignal || 15;
+    const maxMovingDistance = this.config.maxMovingDistance || 150;
+    const minMovingSignal = this.config.minMovingSignal || 15;
+
+    const isMotionDetected = (
+      Number(data.stationaryDistance) > 0 &&
+        Number(data.stationaryDistance) < maxStationaryDistance &&
+        Number(data.stationarySignal) > minStationarySignal
+    )
+      || (
+        Number(data.movingDistance) > 0 && Number(data.movingDistance) < maxMovingDistance && Number(data.movingSignal) > minMovingSignal);
+
+    accessory.updateMotionDetected(isMotionDetected);
   }
 }

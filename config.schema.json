@@ -11,6 +11,30 @@
         "type": "number",
         "default": 9988,
         "description": "The port number for the HTTP server. Must be between 1 and 65535."
+      },
+      "maxStationaryDistance": {
+        "title": "Max Stationary Distance",
+        "type": "number",
+        "default": 150,
+        "description": "The maximum distance a device should monitor, in centimeters."
+      },
+      "minStationarySignal": {
+        "title": "Min Stationary Signal",
+        "type": "number",
+        "default": 15,
+        "description": "The minimum stationary signal should considered as presence (between 0 and 100)."
+      },
+      "maxMovingDistance": {
+        "title": "Max Moving Distance",
+        "type": "number",
+        "default": 150,
+        "description": "The maximum distance a device should monitor, in centimeters."
+      },
+      "minMovingSignal": {
+        "title": "Min Moving Signal",
+        "type": "number",
+        "default": 15,
+        "description": "The minimum moving signal should considered as presence (between 0 and 100)."
       }
     }
   }
