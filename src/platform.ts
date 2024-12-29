@@ -40,7 +40,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
         res.sendStatus(200);
       });
 
-      this.server.listen(port, () => {
+      this.server.listen(port, '0.0.0.0',  () => {
         this.log.info(`HTTP server listening on port ${port}`);
       });
     });
