@@ -18,11 +18,8 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
   public readonly accessories: Map<string, PresenceSensorAccessory> = new Map();
   private server: express.Express;
 
-  // Map from accessory UUID to how many consecutive "no motion" signals
+  // Tracks how many consecutive "no motion" signals we've received
   private noMotionCounts: Map<string, number> = new Map();
-
-  // Timer to handle the sensor going silent after reporting motion
-  private silenceTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
     public readonly log: Logging,
@@ -111,56 +108,25 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       );
 
     if (isMotionDetected) {
-      // Reset no-motion count
+      // Reset the no-motion counter
       this.noMotionCounts.set(uuid, 0);
 
       // Immediately set motion = true
       accessory.updateMotionDetected(true);
-
-      // Cancel any existing silence timer and start a new one
-      const existingSilenceTimer = this.silenceTimers.get(uuid);
-      if (existingSilenceTimer) {
-        clearTimeout(existingSilenceTimer);
-      }
-      const motionOffDelay = (Number(this.config.motionOffDelay) || 10) * 1000;
-      const silenceTimer = setTimeout(() => {
-        this.log.debug(`Sensor ${deviceId} went silent, forcing motion = false.`);
-        accessory.updateMotionDetected(false);
-        this.silenceTimers.delete(uuid);
-      }, motionOffDelay);
-      this.silenceTimers.set(uuid, silenceTimer);
-
     } else {
-      // "No motion" signal
-      let currentCount = this.noMotionCounts.get(uuid) || 0;
-      currentCount += 1;
+      // No motion: increment the counter
+      const currentCount = (this.noMotionCounts.get(uuid) || 0) + 1;
       this.noMotionCounts.set(uuid, currentCount);
 
       const noMotionThreshold = Number(this.config.noMotionThreshold) || 3;
-
-      // Only flip to false if we've reached the threshold
-      // Otherwise, keep waiting for more "no motion" signals
       if (currentCount >= noMotionThreshold) {
-        this.log.debug(`Sensor ${deviceId}: reached ${currentCount} consecutive no-motion signals, setting false.`);
-
-        // Set motion = false
+        this.log.debug(`Sensor ${deviceId}: ${currentCount} consecutive no-motion signals, turning off motion`);
         accessory.updateMotionDetected(false);
 
-        // Clear the silence timer, because we've explicitly turned off motion
-        const existingSilenceTimer = this.silenceTimers.get(uuid);
-        if (existingSilenceTimer) {
-          clearTimeout(existingSilenceTimer);
-          this.silenceTimers.delete(uuid);
-        }
-
-        // Reset the count after we set it to false (optional)
+        // Optional: reset the count after flipping motion to false
         this.noMotionCounts.set(uuid, 0);
       } else {
-        this.log.debug(`Sensor ${deviceId}: got no-motion signal #${currentCount}, waiting for threshold.`);
-
-        // **Importantly, we do NOT clear the silence timer here**
-        // Because if the sensor goes quiet after 1 no-motion event, the silence timer
-        // will eventually flip motion to false anyway.
+        this.log.debug(`Sensor ${deviceId}: no-motion signal #${currentCount}, waiting for threshold`);
       }
     }
   }
