@@ -18,9 +18,10 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
   public readonly accessories: Map<string, PresenceSensorAccessory> = new Map();
   private server: express.Express;
 
-  // Track timers for each accessory
+  // Map from accessory UUID to how many consecutive "no motion" signals
+  private noMotionCounts: Map<string, number> = new Map();
+  // Timer to handle the sensor going silent after reporting motion
   private silenceTimers: Map<string, NodeJS.Timeout> = new Map();
-  private noMotionTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(
     public readonly log: Logging,
@@ -109,57 +110,50 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       );
 
     if (isMotionDetected) {
-      // 1) Cancel any scheduled "no motion" debounce
-      const pendingNoMotion = this.noMotionTimers.get(uuid);
-      if (pendingNoMotion) {
-        clearTimeout(pendingNoMotion);
-        this.noMotionTimers.delete(uuid);
-      }
+      // Reset no-motion count because we just got a motion event
+      this.noMotionCounts.set(uuid, 0);
 
-      // 2) Set motion to true immediately if not already
+      // Immediately set motion = true
       accessory.updateMotionDetected(true);
 
-      // 3) Cancel any existing "silence" timer and start a new one
-      //    so if the sensor goes silent, we turn motion off after motionOffDelay.
+      // If the sensor goes silent after this, eventually we turn motion off:
       const existingSilenceTimer = this.silenceTimers.get(uuid);
       if (existingSilenceTimer) {
         clearTimeout(existingSilenceTimer);
       }
       const motionOffDelay = (Number(this.config.motionOffDelay) || 3) * 1000;
-      const silenceTimer = setTimeout(() => {
-        this.log.debug(`No further data for ${deviceId}, setting motion false...`);
+      const newSilenceTimer = setTimeout(() => {
+        this.log.debug(`Sensor ${deviceId} went silent, forcing motion = false`);
         accessory.updateMotionDetected(false);
         this.silenceTimers.delete(uuid);
       }, motionOffDelay);
 
-      this.silenceTimers.set(uuid, silenceTimer);
+      this.silenceTimers.set(uuid, newSilenceTimer);
 
     } else {
-      // No motion event received
-      // 1) Clear the "silence" timer because sensor is explicitly telling us no motion
+      // Sensor reports "no motion"
+      const currentCount = this.noMotionCounts.get(uuid) || 0;
+      const updatedCount = currentCount + 1;
+      this.noMotionCounts.set(uuid, updatedCount);
+
+      // Cancel the silence timer because we got a fresh update
       const existingSilenceTimer = this.silenceTimers.get(uuid);
       if (existingSilenceTimer) {
         clearTimeout(existingSilenceTimer);
         this.silenceTimers.delete(uuid);
       }
 
-      // 2) Debounce "no motion" to avoid false flips if the sensor toggles quickly
-      const noMotionDelay = (Number(this.config.noMotionDelay) || 2) * 1000;
-
-      // Clear any existing noMotion timer first
-      const existingNoMotionTimer = this.noMotionTimers.get(uuid);
-      if (existingNoMotionTimer) {
-        clearTimeout(existingNoMotionTimer);
-      }
-
-      // 3) Schedule "no motion" in the future
-      const noMotionTimer = setTimeout(() => {
-        this.log.debug(`Confirmed no motion for ${deviceId}, setting motion false...`);
+      // If we've reached or exceeded our threshold, set motion = false
+      const noMotionThreshold = Number(this.config.noMotionThreshold) || 2;
+      if (updatedCount >= noMotionThreshold) {
+        this.log.debug(`Sensor ${deviceId}: reached ${updatedCount} consecutive no-motion signals, setting false`);
         accessory.updateMotionDetected(false);
-        this.noMotionTimers.delete(uuid);
-      }, noMotionDelay);
 
-      this.noMotionTimers.set(uuid, noMotionTimer);
+        // Reset the count after we set it to false (optional)
+        this.noMotionCounts.set(uuid, 0);
+      } else {
+        this.log.debug(`Sensor ${deviceId}: got no-motion signal #${updatedCount}, waiting for threshold`);
+      }
     }
   }
 }
