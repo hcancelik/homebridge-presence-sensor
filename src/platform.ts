@@ -125,7 +125,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       if (existingSilenceTimer) {
         clearTimeout(existingSilenceTimer);
       }
-      const motionOffDelay = (Number(this.config.motionOffDelay) || 10) * 1000;
+      const motionOffDelay = (Number(this.config.motionOffDelay) || 3) * 1000;
       const silenceTimer = setTimeout(() => {
         this.log.debug(`No further data for ${deviceId}, setting motion false...`);
         accessory.updateMotionDetected(false);
@@ -144,7 +144,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       }
 
       // 2) Debounce "no motion" to avoid false flips if the sensor toggles quickly
-      const noMotionDelay = (Number(this.config.noMotionDelay) || 5) * 1000;
+      const noMotionDelay = (Number(this.config.noMotionDelay) || 2) * 1000;
 
       // Clear any existing noMotion timer first
       const existingNoMotionTimer = this.noMotionTimers.get(uuid);

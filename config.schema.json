@@ -36,12 +36,18 @@
         "default": 15,
         "description": "The minimum moving signal should considered as presence (between 0 and 100)."
       },
+      "motionOffDelay": {
+        "title": "Motion Off Delay",
+        "type": "number",
+        "default": 3,
+        "description": "The delay in seconds to consider no motion if no sensor data provided."
+      },
       "noMotionDelay": {
         "title": "No Motion Delay",
         "type": "number",
-        "default": 3,
-        "description": "The delay in seconds to consider a device as not moving."
-      },
+        "default": 2,
+        "description": "The delay in seconds to consider real no motion. Increase this value if you have false positives."
+      }
     }
   }
 }
