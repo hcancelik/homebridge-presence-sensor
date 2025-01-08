@@ -22,6 +22,10 @@ export class PresenceSensorAccessory {
       });
   }
 
+  getCurrentMotionState() {
+    return this.motionService.getCharacteristic(this.platform.Characteristic.MotionDetected).value;
+  }
+
   updateMotionDetected(state: boolean) {
     this.motionService
       .getCharacteristic(this.platform.Characteristic.MotionDetected)

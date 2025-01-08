@@ -113,7 +113,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
 
       // Immediately set motion = true
       accessory.updateMotionDetected(true);
-    } else {
+    } else if (accessory.getCurrentMotionState()) {
       // No motion: increment the counter
       const currentCount = (this.noMotionCounts.get(uuid) || 0) + 1;
       this.noMotionCounts.set(uuid, currentCount);
