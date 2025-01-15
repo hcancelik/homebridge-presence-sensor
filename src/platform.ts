@@ -19,6 +19,7 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
 
   // Tracks how many consecutive "no motion" signals we've received
   private noMotionCounts: Map<string, number> = new Map();
+  private presenceTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     public readonly log: Logging,
@@ -32,26 +33,31 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
     const mqttTopic = this.config.mqttTopic || 'bedroom_sensor/data';
     const mqttClient = connect(mqttHost);
 
-    mqttClient.on('connect', () => {
-      this.log.info('MQTT connected');
-      mqttClient.subscribe(mqttTopic, (err) => {
-        if (err) {
-          this.log.error('MQTT subscribe error:', err);
-        } else {
-          this.log.info(`Subscribed to topic ${mqttTopic}`);
+    this.api.on('didFinishLaunching', () => {
+      mqttClient.on('connect', () => {
+        this.log.info('MQTT connected');
+
+        mqttClient.subscribe(mqttTopic, (err) => {
+          if (err) {
+            this.log.error('MQTT subscribe error:', err);
+          } else {
+            this.log.info(`Subscribed to topic ${mqttTopic}`);
+          }
+        });
+      });
+
+      mqttClient.on('message', (topic, message) => {
+        try {
+          const payload = JSON.parse(message.toString());
+          const { deviceId, data } = payload;
+
+          this.log.debug(`MQTT message from ${deviceId}:`, data);
+
+          this.handleMotionEvent(deviceId, data);
+        } catch (err) {
+          this.log.error('Failed to parse MQTT message:', err);
         }
       });
-    });
-
-    mqttClient.on('message', (topic, message) => {
-      try {
-        const payload = JSON.parse(message.toString());
-        const { deviceId, data } = payload;
-        this.log.debug(`MQTT message from ${deviceId}:`, data);
-        this.handleMotionEvent(deviceId, data);
-      } catch (err) {
-        this.log.error('Failed to parse MQTT message:', err);
-      }
     });
   }
 
@@ -111,26 +117,16 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
       );
 
     if (isMotionDetected) {
-      // Reset the no-motion counter
-      this.noMotionCounts.set(uuid, 0);
-
-      // Immediately set motion = true
       accessory.updateMotionDetected(true);
-    } else if (accessory.getCurrentMotionState()) {
-      // No motion: increment the counter
-      const currentCount = (this.noMotionCounts.get(uuid) || 0) + 1;
-      this.noMotionCounts.set(uuid, currentCount);
 
-      const noMotionThreshold = Number(this.config.noMotionThreshold) || 3;
-      if (currentCount >= noMotionThreshold) {
-        this.log.debug(`Sensor ${deviceId}: ${currentCount} consecutive no-motion signals, turning off motion`);
-        accessory.updateMotionDetected(false);
-
-        // Optional: reset the count after flipping motion to false
-        this.noMotionCounts.set(uuid, 0);
-      } else {
-        this.log.debug(`Sensor ${deviceId}: no-motion signal #${currentCount}, waiting for threshold`);
+      if (this.presenceTimers.has(uuid)) {
+        clearTimeout(this.presenceTimers.get(uuid)!);
       }
+
+      this.presenceTimers.set(uuid, setTimeout(() => {
+        this.log.debug(`Motion timed out for ${deviceId}, turning off`);
+        accessory.updateMotionDetected(false);
+      }, (this.config.turnOffTimeout || 3) * 1000));
     }
   }
 }

@@ -6,12 +6,6 @@
   "schema": {
     "type": "object",
     "properties": {
-      "port": {
-        "title": "HTTP Server Port",
-        "type": "number",
-        "default": 9988,
-        "description": "The port number for the HTTP server. Must be between 1 and 65535."
-      },
       "maxStationaryDistance": {
         "title": "Max Stationary Distance",
         "type": "number",
@@ -36,10 +30,10 @@
         "default": 15,
         "description": "The minimum moving signal should considered as presence (between 0 and 100)."
       },
-      "noMotionThreshold": {
-        "title": "No Motion Threshold",
+      "turnOffTimeout": {
+        "title": "Turn Off Timeout (seconds)",
         "type": "number",
-        "default": 2,
+        "default": 3,
         "description": "The threshold to consider real no motion. Increase this value if you have false positives."
       }
     }
