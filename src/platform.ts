@@ -9,14 +9,13 @@ import type {
 } from 'homebridge';
 import { PresenceSensorAccessory } from './platformAccessory.js';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
-import express from 'express';
+import { connect } from 'mqtt';
 
 export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
 
   public readonly accessories: Map<string, PresenceSensorAccessory> = new Map();
-  private server: express.Express;
 
   // Tracks how many consecutive "no motion" signals we've received
   private noMotionCounts: Map<string, number> = new Map();
@@ -29,26 +28,30 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
 
-    const port = this.config.port || 9988;
-    this.server = express();
-    this.server.use(express.json());
+    const mqttHost = this.config.mqttHost || 'mqtt://192.168.68.55';
+    const mqttTopic = this.config.mqttTopic || 'bedroom_sensor/data';
+    const mqttClient = connect(mqttHost);
 
-    this.log.debug('Finished initializing platform:', this.config.name);
+    mqttClient.on('connect', () => {
+      this.log.info('MQTT connected');
+      mqttClient.subscribe(mqttTopic, (err) => {
+        if (err) {
+          this.log.error('MQTT subscribe error:', err);
+        } else {
+          this.log.info(`Subscribed to topic ${mqttTopic}`);
+        }
+      });
+    });
 
-    this.api.on('didFinishLaunching', () => {
-      this.log.debug('Executed didFinishLaunching callback');
-      this.discoverDevices();
-
-      this.server.post('/motion', (req, res) => {
-        const { deviceId, data } = req.body;
-        this.log.debug(`Received motion event from ${deviceId}:`, data);
+    mqttClient.on('message', (topic, message) => {
+      try {
+        const payload = JSON.parse(message.toString());
+        const { deviceId, data } = payload;
+        this.log.debug(`MQTT message from ${deviceId}:`, data);
         this.handleMotionEvent(deviceId, data);
-        res.sendStatus(200);
-      });
-
-      this.server.listen(port, '0.0.0.0', () => {
-        this.log.info(`HTTP server listening on port ${port}`);
-      });
+      } catch (err) {
+        this.log.error('Failed to parse MQTT message:', err);
+      }
     });
   }
 
