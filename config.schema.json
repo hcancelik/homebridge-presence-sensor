@@ -35,6 +35,30 @@
         "type": "number",
         "default": 3,
         "description": "The threshold to consider real no motion. Increase this value if you have false positives."
+      },
+      "mqttHost": {
+        "title": "MQTT Host",
+        "type": "string",
+        "default": "mqtt://localhost",
+        "description": "The MQTT host to connect to."
+      },
+      "mqttUsername": {
+        "title": "MQTT Username",
+        "type": "string",
+        "default": "",
+        "description": "The MQTT username to use."
+      },
+      "mqttPassword": {
+        "title": "MQTT Password",
+        "type": "string",
+        "default": "",
+        "description": "The MQTT password to use."
+      },
+      "mqttTopic": {
+        "title": "MQTT Topic",
+        "type": "string",
+        "default": "presence",
+        "description": "The MQTT topic to publish to."
       }
     }
   }

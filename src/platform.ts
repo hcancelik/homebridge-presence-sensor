@@ -17,8 +17,6 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
 
   public readonly accessories: Map<string, PresenceSensorAccessory> = new Map();
 
-  // Tracks how many consecutive "no motion" signals we've received
-  private noMotionCounts: Map<string, number> = new Map();
   private presenceTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
@@ -29,11 +27,16 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
 
-    const mqttHost = this.config.mqttHost || 'mqtt://192.168.68.55';
-    const mqttTopic = this.config.mqttTopic || 'bedroom_sensor/data';
-    const mqttClient = connect(mqttHost);
+    const mqttHost = this.config.mqttHost || 'mqtt://localhost';
+    const mqttOptions = {
+      username: this.config.mqttUsername || '',
+      password: this.config.mqttPassword || '',
+    };
+    const mqttClient = connect(mqttHost, mqttOptions);
 
     this.api.on('didFinishLaunching', () => {
+      const mqttTopic = this.config.mqttTopic || 'bedroom_sensor/data';
+      
       mqttClient.on('connect', () => {
         this.log.info('MQTT connected');
 
@@ -58,6 +61,8 @@ export class PresenceSensorPlatformPlugin implements DynamicPlatformPlugin {
           this.log.error('Failed to parse MQTT message:', err);
         }
       });
+
+      this.discoverDevices();
     });
   }
 
